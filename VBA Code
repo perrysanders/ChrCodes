@@ -60,13 +60,13 @@ Else
     Do While Not inr_rs.EOF
             'Debug.Print " - " & inr_rs.Fields("" & FieldName & "") & " : Error = " & rs.Fields("ChrCodeDec") & " - " & rs.Fields("Description")
             
-            'begin update SQL
+            'begin update SQL or Replace
                 Dim insert_sql As String
             Set db = CurrentDb
             update_sql = "UPDATE " & TableName & " SET " & MyField & " =('" & Nz(inr_rs.Fields("" & MyField & "")) & " - " & rs.Fields("Description") & "') WHERE (" & Me.selectedField & "= '" & inr_rs.Fields(Me.selectedField) & "')"
                 'Debug.Print update_sql
             db.Execute update_sql, dbFailOnError
-            'end update SQL
+            'end update SQL or Replace
       inr_rs.MoveNext
       Loop
           inr_rs.Close
