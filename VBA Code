@@ -1,0 +1,90 @@
+Private Sub Command15_Click()
+DoCmd.SetWarnings False
+Dim checkTable As String
+checkTable = Me.selectedTable
+
+    Dim Udb As DAO.Database
+    Dim tdf As DAO.TableDef
+    Dim fld As DAO.Field
+    Dim addField As DAO.Field
+    Dim MyField As String
+    Set Udb = CurrentDb
+    Set tdf = Udb.TableDefs("" & checkTable & "")
+
+For Each fld In tdf.Fields
+    'Debug.Print fld.Name
+    MyField = fld.Name & "_ERROR"
+
+If fld.Name Like "*_ERROR" Then GoTo EndAllEndAll
+
+    Dim Usql As String
+    Usql = "ALTER TABLE " & checkTable & " ADD COLUMN " & MyField & " TEXT(255)"
+    Udb.Execute Usql, dbFailOnError
+        'Debug.Print MyField
+
+'If fld.Name Like "MAIL_ZIP" Then GoTo NextField
+    
+    Dim TableName As String
+    Dim FieldName As String
+    Dim ErrorFieldName As String
+        TableName = checkTable
+        FieldName = fld.Name
+        'ErrorFiledName = MyField
+        
+  Dim rs As DAO.Recordset
+  strsql = "SELECT * FROM ChrCodes WHERE ChrCodes.Status = '0'"
+  'Debug.Print strsql
+  Set rs = CurrentDb.OpenRecordset(strsql)
+    rs.MoveLast
+    rs.MoveFirst
+If (rs.BOF And rs.EOF) Then
+    MsgBox "Nothing There"
+    End
+Else
+    Do While Not rs.EOF
+        'Debug.Print rs.Fields("Char") & " - " & rs.Fields("Description")
+        
+'begin inner loop
+  Dim inr_rs As DAO.Recordset
+  inr_strsql = "SELECT * FROM " & TableName & " WHERE " & FieldName & " LIKE " & "'*[" & rs.Fields("Char") & "]*'"
+  Set inr_rs = CurrentDb.OpenRecordset(inr_strsql)
+            'Debug.Print inr_strsql
+            'Debug.Print inr_rs.RecordCount
+If inr_rs.RecordCount = 0 Then GoTo nullString
+        inr_rs.MoveLast
+        inr_rs.MoveFirst
+If (inr_rs.BOF And inr_rs.EOF) Then
+        MsgBox "Nothing There"
+    End
+Else
+    Do While Not inr_rs.EOF
+            'Debug.Print " - " & inr_rs.Fields("" & FieldName & "") & " : Error = " & rs.Fields("ChrCodeDec") & " - " & rs.Fields("Description")
+            
+            'begin update SQL
+                Dim insert_sql As String
+            Set db = CurrentDb
+            update_sql = "UPDATE " & TableName & " SET " & MyField & " =('" & Nz(inr_rs.Fields("" & MyField & "")) & " - " & rs.Fields("Description") & "') WHERE (" & Me.selectedField & "= '" & inr_rs.Fields(Me.selectedField) & "')"
+                'Debug.Print update_sql
+            db.Execute update_sql, dbFailOnError
+            'end update SQL
+      inr_rs.MoveNext
+      Loop
+          inr_rs.Close
+          Set db = Nothing
+  End If
+  'run some update here
+nullString:
+      rs.MoveNext
+      Loop
+      inr_rs.Close
+  End If
+  'run some update here
+'NextField:
+    Next
+EndAllEndAll:
+    Set tdf = Nothing
+    Set db = Nothing
+    MsgBox "Done!", vbOKOnly
+    DoCmd.OpenTable Me.selectedTable
+    
+End Sub
